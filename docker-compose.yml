@@ -1,7 +1,25 @@
 ---
 version: '3.7'
 services:
-  ## MySQL Docker Compose Config
+  postgres-payment:
+    container_name: postgres-payment
+    image: postgres:16.2
+    environment:
+      POSTGRES_DB: payment-service
+      POSTGRES_USER: ptechie
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    volumes:
+      - ./postgres-payment:/data/postgres
+    expose:
+      - "5433"
+    ports:
+      - "5433:5433"
+    command: -p 5433
+    restart: always
+    networks:
+      - demo-network
+
   postgres-order:
     container_name: postgres-order
     image: postgres:16.2
@@ -219,6 +237,21 @@ services:
     networks:
       - demo-network
 
+  payment-service:
+    container_name: payment-service
+    image: microservices-tutorial/payment-service:latest
+    ports:
+      - "28084:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-payment:5433/payment-service
+    depends_on:
+      - zipkin
+      - broker
+      - discovery-server
+      - api-gateway
+    networks:
+      - demo-network
   ## Prometheus
   prometheus:
     image: prom/prometheus:v2.37.1
